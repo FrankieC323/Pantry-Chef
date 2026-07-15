@@ -143,3 +143,7 @@ Before going live: set a real `JWT_SECRET_KEY`, set a spending cap in the Anthro
 - **Image-based fridge/shelf scanner**: a natural next feature — snap a photo, use a vision model to identify items, and feed that straight into either mode instead of manual checkboxes.
 - **Preference learning** (Personal Mode): the rating → preference-summary pipeline in `ratings/service.py` is intentionally simple (heuristic averaging). A trained model is a reasonable next step.
 - **Production DB**: swap `DATABASE_URL` in `.env` to a Postgres connection string; the SQLAlchemy models don't need to change.
+
+## License
+
+MIT — see [LICENSE](./LICENSE). Free to use, modify, and adapt, including for other food banks or organizations.
