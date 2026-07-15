@@ -1,95 +1,95 @@
 # PantryChef
 
-A pantry-aware recipe app with two modes:
+I built this because I kept standing in front of my kitchen with no idea what to make, while stuff in the back of the fridge quietly went bad. So PantryChef started as a pantry tracker with an AI-powered recipe matcher — track what you've got, get suggestions that use it up before it expires, rate what you actually cooked so it gets better at guessing what you'll like.
 
-- **Personal Mode** — track your own pantry, get AI-matched recipe suggestions that prioritize what's about to expire, and rate what you cook so future suggestions improve.
-- **Food Bank Mode** — a staff/volunteer tool for generating printable, bilingual (EN/ES) recipe cards from today's shelf stock, built for distribution alongside food boxes.
+Then I realized the actual hard part of the app — reasoning well about what you can make from a fixed, limited set of ingredients — wasn't really about *my* fridge specifically. A food bank asks almost the exact same question every day, just at a bigger scale and with higher stakes. So there are two modes now:
 
-Both modes share one codebase and one login system. Multiple staff can have their own accounts; each deployment (see [Deploying](#deploying) below) serves one organization — this isn't a shared multi-tenant service where different food banks share a database, so each org runs its own copy.
+- **Personal Mode** — the original idea. Track your pantry, get AI-matched recipes that prioritize what's about to expire, rate what you cook.
+- **Food Bank Mode** — built for staff and volunteers. Check off what's on the shelves today, and get back a batch of printable, bilingual (English/Spanish) recipe cards to send home with the food boxes.
 
-## For food banks: quick orientation
+Same codebase, same login system, both modes. One thing worth being upfront about: each deployment is meant for one organization. This isn't some shared platform where multiple food banks all use the same database — if two different food banks want this, they each run their own copy.
 
-If you're a food bank adopting this rather than the person who built it:
+## If you're a food bank looking at this
 
-1. Someone technical (a volunteer, a board member, whoever set this up) needs to deploy it once — see [Deploying](#deploying). After that, it's a normal website.
-2. Each staff member who'll use it needs their own account — created via the sign-up screen the first time, or by an admin. See [Staff accounts](#staff-accounts--api-keys).
-3. Day-to-day use is **Food Bank Mode**: a volunteer checks off what's on the shelves today, optionally flags near-expiry/overstocked items to prioritize, sets any dietary or equipment constraints, and generates a batch of recipe cards to print and hand out. Past batches are saved automatically so staff can look back without regenerating anything.
-4. Cost is small and controllable — see [API costs](#api-costs) below.
+You're probably not the person who's going to touch the code, so here's the short version:
 
-## Features
+1. Somebody technical needs to deploy it once (see [Deploying](#deploying) below). After that it's just a website your staff log into.
+2. Everyone who'll use it should have their own account — first-time setup is a normal sign-up screen, or an existing staff member can just tell someone their login works already.
+3. Day to day, you're living in Food Bank Mode: check off what's actually on the shelf, flag anything that's about to expire or that you're overstocked on (the AI will try to build recipes around those first), set any dietary or equipment limits that matter, and hit generate. Print the cards, hand them out. Everything you generate gets saved automatically, so you can look back at last week's batch without regenerating it.
+4. It's cheap to run — see [API costs](#api-costs) if you're curious how cheap.
 
-1. **Pantry tracker** (Personal Mode) — CRUD for ingredients with quantity, unit, category, and expiration date, plus bulk-paste import (see below).
-2. **AI-enhanced recipe matcher** (Personal Mode) — sends the current pantry plus a pre-filtered candidate set of cached recipes to Claude, which ranks matches, explains substitutions in plain language, and generates a new recipe when nothing in the cache fits.
-3. **Recipe scaler / unit converter** — deterministic serving-size scaling and unit conversion, no AI involved.
-4. **Personal ratings** — rate recipes 1–5 stars; a short preference summary is fed back into the matcher's prompt so suggestions improve over time.
-5. **Food Bank Mode** — staff check off today's in-stock items from a preset catalog, flag priority (near-expiry/overstocked) items, set dietary/equipment constraints, and generate a batch of bilingual, printable recipe cards. Every batch is logged so staff can revisit a past day's cards for free.
-6. **Bulk pantry import** — paste a range copied from Excel/Google Sheets (tab-separated), a comma-separated table, or a plain list of item names, and it parses each row with sensible fallbacks (unrecognized unit → defaults to "piece" with a warning shown, not a hard failure).
-7. **Staff accounts** — real per-person logins (bcrypt-hashed passwords, JWT sessions), not a single shared password. Every route in the app requires being signed in.
+## What's actually in here
 
-## Staff accounts & API keys
+1. **Pantry tracker** (Personal Mode) — add/edit/remove ingredients with quantity, unit, category, expiration date. You can also paste in a whole list at once instead of typing items one by one (see bulk import below).
+2. **AI recipe matcher** (Personal Mode) — this is the part I'm most proud of. It sends your current pantry plus a filtered set of candidate recipes to Claude, which actually ranks how well each one fits, explains substitutions in plain language when you're missing something, and writes a brand-new recipe on the spot if nothing already in the cache is a good match.
+3. **Recipe scaler** — just math, scales ingredient amounts to whatever serving size you need and converts between units. No AI needed for this one, it doesn't have to be smart, it just has to be right.
+4. **Ratings** — rate what you cooked 1–5 stars, and a short summary of your taste gets folded back into future matching.
+5. **Food Bank Mode** — the newer half of the app. Staff pick from a preset catalog of common food-bank items (way faster than typing during a shift), flag priority items, set constraints, and generate a batch of bilingual printable cards. Every batch gets logged.
+6. **Bulk pantry import** — paste a range straight out of Excel or Google Sheets, a comma-separated table, or just a plain list of names, and it figures out what it can. If it can't confidently parse something (a weird unit, say), it doesn't just fail — it defaults to something sensible and tells you what it guessed.
+7. **Real staff accounts** — not one shared password everybody uses. Actual per-person logins, hashed passwords, and every page in the app requires being signed in.
+
+## Accounts and keeping your API keys private
 
 ### Accounts
 
-- The first time the app is deployed, sign-up is open (`ALLOW_OPEN_REGISTRATION=true`) so the first few staff can create their own accounts from the login screen.
-- **Once your staff are set up, turn this off.** Set `ALLOW_OPEN_REGISTRATION=false` in the backend's environment variables and redeploy. This closes the sign-up screen to new accounts — existing staff can still log in normally.
-- There's no per-account role system (admin vs. volunteer) — anyone with an account can do anything in the app. For a single food bank's internal staff tool, that's an intentional simplification, not an oversight; if you need tiered permissions later, that's a real feature to add, not a config flip.
-- Sessions expire after 12 hours (roughly one shift), so staff log in again each day rather than staying signed in indefinitely.
+When you first deploy this, sign-up is open by default (`ALLOW_OPEN_REGISTRATION=true`) so your first handful of staff can create their own accounts. **Turn that off once they're set up** — flip `ALLOW_OPEN_REGISTRATION` to `false` in your environment variables and redeploy, and the sign-up screen stops accepting new accounts from randoms who find the URL.
 
-### Keeping API keys private
+Heads up that there's no admin-vs-volunteer distinction right now — any account can do anything in the app. For a small internal staff tool that felt like the right amount of complexity to build; if you actually need tiered permissions down the line, that's a real feature to add, not a setting to flip.
 
-This app uses two secrets: an **Anthropic API key** (powers the AI features) and a **JWT secret key** (signs staff login sessions). Both must stay private. Here's how that's enforced, and what you need to double check:
+Sessions last about 12 hours, roughly one shift, so people log back in the next day instead of staying signed in forever.
 
-- **They're never in the code.** Every secret is read from environment variables (`ANTHROPIC_API_KEY`, `JWT_SECRET_KEY`) — never hardcoded, never committed.
-- **`.env` is git-ignored.** The repo's `.gitignore` excludes `.env` and `.env.local` by name, so `git add -A` will never pick them up. Only `.env.example` (which has the variable *names* but no real values) is tracked.
-- **Where real values actually live:** on your own machine, in a local `.env` file you create by copying `.env.example`. In production, in your hosting platform's environment-variable settings (Render, Railway, Vercel, etc. all have a dashboard for this) — never in a file that gets deployed alongside your code.
-- **Before your first push to GitHub**, run `git status` and confirm `.env` isn't listed as a tracked file. If it somehow already got committed in the past, deleting it in a new commit isn't enough — it's still in the git history. In that case, rotate the key (generate a new one and revoke the old one in the Anthropic Console) rather than trying to scrub history.
-- **The JWT secret** needs to be a real random value before you deploy anywhere real — the default in `.env.example` is an obviously-fake placeholder on purpose, so it's easy to notice if you forgot to change it. Generate one with:
-  ```bash
+### Keeping your API keys private
+
+There are two secrets this app cares about: your Anthropic API key (this is what actually powers the AI) and a JWT secret key (this is what signs staff login sessions so people can't fake being logged in). Neither should ever end up somewhere public. Here's how I've tried to make that hard to mess up, and what's still on you to double-check:
+
+- Nothing is hardcoded — every secret is read from environment variables, never written into the code itself.
+- `.env` is already in `.gitignore`, so a normal `git add -A` will never accidentally pick it up. Only `.env.example` gets committed, and that file just has the variable *names*, not real values.
+- The real values live in two places: a `.env` file on your own machine that you create yourself (copy `.env.example` and fill it in), and your hosting platform's environment variable settings once you deploy — never in a file that actually gets pushed anywhere.
+- Before your first push, just run `git status` and make sure `.env` isn't sitting there as a tracked file. And if it somehow already got committed at some point in the past — deleting it in a later commit isn't enough, it's still sitting in your git history where anyone can find it. If that happens, the fix is to rotate the key (make a new one, revoke the old one in the Anthropic Console), not to try to scrub history.
+- Generate a real JWT secret before deploying anywhere that matters — the placeholder in `.env.example` is obviously fake on purpose, so you notice if you forgot to replace it:
+```bash
   python -c "import secrets; print(secrets.token_hex(32))"
-  ```
-  Anyone who has this value can forge a valid login for any username, so treat it exactly like a password.
+```
+  Whoever has that value can forge a login for literally any username, so treat it like a password, not a config detail.
 
 ### API costs
 
-The food bank feature defaults to **Claude Haiku**, priced per-token specifically because this is a short, bounded task (a checked-off item list in, a handful of recipe cards out) — it doesn't need a larger model. A single "generate today's batch" call costs roughly a cent. Realistic usage (one generation per shift, not per client) means a modest monthly API budget goes a long way; set a hard spending cap in the [Anthropic Console](https://console.anthropic.com/) so usage can never exceed what you intend to spend.
+I made a point of not hand-waving this. Food Bank Mode defaults to Claude Haiku — it's the cheapest current model, and this is exactly the kind of bounded task it's good at (short list of items in, a handful of recipe cards out, nothing fancy needed). One generation costs roughly a cent. If you're using it the way it's meant to be used — once per shift to generate the day's batch, not once per person — a modest budget goes a genuinely long way. Set a hard spending cap in the [Anthropic Console](https://console.anthropic.com/) so you never have to worry about a bug or a weird traffic spike blowing past what you meant to spend.
 
-While developing or demoing, set `USE_MOCK_API=true` in the backend's `.env` — this returns a canned example response instantly with no API call and no cost, so you can build and test the UI for free. Set it back to `false` for real output.
+And while you're actually building or testing anything, set `USE_MOCK_API=true` in the backend's `.env`. It returns a fake but realistic example response instantly, no API call, no cost — so you can mess with the UI as much as you want for free, and only flip it back to real calls when you actually need to see live output.
 
 ## Stack
 
-- **Backend**: Python, FastAPI, SQLAlchemy, SQLite (swappable for Postgres)
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, React Query, React Router
-- **AI**: Claude API (Anthropic) — ingredient matching, substitution reasoning, recipe generation, and food-bank recipe cards
-- **Auth**: bcrypt password hashing + JWT sessions (`python-jose`)
-- **Recipe data** (Personal Mode): Spoonacular API (primary) + a BeautifulSoup scraper reading Schema.org Recipe JSON-LD (supplemental) + Claude-generated recipes (fallback)
+- **Backend**: Python, FastAPI, SQLAlchemy, SQLite (works fine with Postgres too if you swap the connection string)
+- **Frontend**: React, TypeScript, Vite, Tailwind, React Query, React Router
+- **AI**: Claude API — handles ingredient matching, substitution reasoning, recipe generation, and the food bank cards
+- **Auth**: bcrypt for password hashing, JWT for sessions
+- **Recipe data** (Personal Mode): Spoonacular API is the primary source, with a small scraper reading Schema.org recipe markup as backup, and Claude generating something from scratch as a last resort if neither has a good match
 
-## Project structure
-
-```
+## How it's organized
 pantry-chef/
 ├── backend/
 │   ├── app/
-│   │   ├── auth/        # staff accounts -- models, hashing, JWT, login/register routes
-│   │   ├── pantry/      # pantry CRUD, expiration logic, bulk-paste import parser
+│   │   ├── auth/        # staff accounts -- hashing, JWT, login/register
+│   │   ├── pantry/      # pantry CRUD, expiration logic, bulk-paste import
 │   │   ├── recipes/     # recipe models, Spoonacular client, caching
-│   │   ├── matcher/     # Claude integration for Personal Mode suggestions
-│   │   ├── foodbank/    # Food Bank Mode -- catalog, Claude client, generation + history
+│   │   ├── matcher/     # the Claude integration behind Personal Mode
+│   │   ├── foodbank/    # Food Bank Mode -- catalog, Claude prompt, history
 │   │   ├── ratings/     # rating CRUD + preference summarization
 │   │   ├── scaler/      # serving-size scaling + unit conversion
-│   │   ├── scrapers/    # supplemental recipe scraper (JSON-LD based)
+│   │   ├── scrapers/    # backup recipe scraper
 │   │   ├── core/        # settings
 │   │   └── db/          # SQLAlchemy session setup
 │   └── tests/
 └── frontend/
-    └── src/
-        ├── pages/        # Pantry, Suggestions, History, Food Bank Mode, Login
-        ├── components/   # shared UI (cards, ratings, scaler widget, bulk import panel)
-        ├── auth/          # AuthContext -- session state, login/register/logout
-        ├── api/          # typed fetch wrappers per backend module
-        └── types/        # TypeScript types mirroring backend schemas
-```
+└── src/
+├── pages/        # Pantry, Suggestions, History, Food Bank Mode, Login
+├── components/   # shared UI pieces
+├── auth/         # session state, login/register/logout
+├── api/          # typed fetch wrappers per backend module
+└── types/        # TS types mirroring the backend schemas
 
-## Running locally
+## Running it locally
 
 ### Backend
 
@@ -98,14 +98,14 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env              # then fill in ANTHROPIC_API_KEY, JWT_SECRET_KEY, etc.
+cp .env.example .env              # fill in ANTHROPIC_API_KEY, JWT_SECRET_KEY, etc.
 uvicorn app.main:app --reload
 ```
 
-API docs (Swagger UI) at `http://localhost:8000/docs`.
+Swagger docs show up at `http://localhost:8000/docs` once it's running.
 
-- Get a free Anthropic API key: https://console.anthropic.com/
-- Get a free Spoonacular API key (150 requests/day, optional -- only needed for Personal Mode's recipe search): https://spoonacular.com/food-api/console#Dashboard
+- Free Anthropic key: https://console.anthropic.com/
+- Free Spoonacular key (150 requests/day, optional — only matters for Personal Mode's recipe search): https://spoonacular.com/food-api/console#Dashboard
 
 ### Frontend
 
@@ -116,7 +116,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Opens at `http://localhost:5173`. The first screen is a login/sign-up page — create a staff account, then you're in.
+Runs at `http://localhost:5173`. First thing you'll see is the login screen — make an account and you're in. Everything's stored in the backend's database, so it's all still there next time you open the browser.
 
 ### Tests
 
@@ -128,22 +128,24 @@ pytest tests/ -v
 
 ## Deploying
 
-Three pieces, each hosted separately:
+Three separate pieces to host:
 
-1. **Backend** — Render or Railway both work well: point at this repo, set the environment variables from `.env.example` (with real values) in their dashboard, not in a file. If using SQLite, make sure the database file is on a **persistent disk** — the default ephemeral filesystem on most free tiers resets on every redeploy, which would silently wipe your pantry/history data. A free hosted Postgres instance (offered by both platforms) avoids this entirely.
-2. **Frontend** — Vercel or Netlify: build command `npm run build`, output directory `dist`, set `VITE_API_BASE_URL` to your backend's deployed URL.
-3. **Domain** — both frontend platforms give you a free subdomain with HTTPS automatically; a custom domain is optional.
+1. **Backend** — Render or Railway both work. Point either one at this repo and set your real environment variable values in their dashboard, not in a file that gets deployed. One thing that'll bite you if you're not careful: if you're using SQLite, make sure the database file lives on a persistent disk — most free tiers use an ephemeral filesystem that wipes on every redeploy, and you do not want to find that out after you've got real data in there. A free hosted Postgres from either platform sidesteps the problem entirely.
+2. **Frontend** — Vercel or Netlify. Build command is `npm run build`, output directory is `dist`, and point `VITE_API_BASE_URL` at wherever you deployed the backend.
+3. **Domain** — both platforms hand you a free subdomain with HTTPS out of the box. A custom domain is nice but optional.
 
-Before going live: set a real `JWT_SECRET_KEY`, set a spending cap in the Anthropic Console, and turn off `ALLOW_OPEN_REGISTRATION` once your staff accounts exist.
+Before you actually go live with this somewhere real: generate a proper `JWT_SECRET_KEY`, set a spending cap in the Anthropic Console, and turn off open registration once your staff have accounts.
 
-## Notes for future development
+## Things I know are missing
 
-- **No role-based permissions**: any account can do anything. Fine for one org's internal staff; a real limitation if you need admin/volunteer tiers.
-- **Single organization per deployment**: there's one shared pantry/history per deployment, not per-user or per-org data isolation. Multiple food banks would each need their own deployment, not a shared instance.
-- **Image-based fridge/shelf scanner**: a natural next feature — snap a photo, use a vision model to identify items, and feed that straight into either mode instead of manual checkboxes.
-- **Preference learning** (Personal Mode): the rating → preference-summary pipeline in `ratings/service.py` is intentionally simple (heuristic averaging). A trained model is a reasonable next step.
-- **Production DB**: swap `DATABASE_URL` in `.env` to a Postgres connection string; the SQLAlchemy models don't need to change.
+Being honest about what's not here yet:
+
+- **No roles.** Every account can do everything. That's fine for a small team, but it's a real gap if you need to separate what an admin can do from what a volunteer can.
+- **One org per deployment.** There's no data isolation between organizations — this app assumes it's serving one food bank, not several sharing an instance.
+- **No image-based scanning yet.** Snapping a photo of a shelf or a fridge and having a vision model figure out what's there instead of checking boxes by hand feels like the obvious next step.
+- **The preference-learning in Personal Mode is intentionally simple** — it's basically heuristic averaging of your ratings, not a trained model. Works fine, could be smarter.
+- **The food bank catalog was reasoned out, not sourced from a real food bank's actual inventory.** If you're adopting this, you'll probably want to adjust the preset item list to match what you actually stock.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). Free to use, modify, and adapt, including for other food banks or organizations.
+MIT — see [LICENSE](./LICENSE). Use it, change it, adapt it for your own food bank or organization. I'd just like to hear about it if you do.
