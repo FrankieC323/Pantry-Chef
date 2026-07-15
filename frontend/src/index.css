@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background-color: #faf3e8;
+  }
+
+  body {
+    @apply bg-cream text-ink font-body antialiased;
+    background-image: radial-gradient(circle at 1px 1px, rgba(43, 36, 32, 0.05) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-ink;
+  }
+
+  :focus-visible {
+    outline: 2px solid #c7754a;
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: #e3bd7e;
+    color: #2b2420;
+  }
+}
+
+@layer components {
+  /* The "stamp" treatment used for expiring-soon items and AI-match badges --
+     this is the page's signature visual motif (see frontend-design plan). */
+  .stamp {
+    @apply inline-flex items-center gap-1 rounded-sm border-2 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide;
+    transform: rotate(-2deg);
+  }
+
+  .card-paper {
+    @apply rounded-md border border-ink/10 bg-white/60 shadow-[0_2px_0_0_rgba(43,36,32,0.08)];
+  }
+}
+
+/* Food Bank Mode's "Print cards" button relies on this: hides chrome (header/
+   nav/footer, checkboxes, buttons already marked print:hidden) and lets
+   RecipeCardPrint's cards break cleanly across pages instead of splitting
+   mid-card. */
+@media print {
+  body {
+    background-image: none;
+  }
+
+  header,
+  footer {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+}

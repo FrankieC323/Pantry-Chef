@@ -1,0 +1,72 @@
+{
+  "cards": [
+    {
+      "title_en": "Rice and Bean Skillet",
+      "title_es": "Sart\u00e9n de Arroz y Frijoles",
+      "ingredients_en": [
+        "1 cup white rice",
+        "1 can black beans, drained",
+        "1 can tomatoes",
+        "1 onion, chopped",
+        "2 tbsp cooking oil",
+        "salt to taste"
+      ],
+      "ingredients_es": [
+        "1 taza de arroz blanco",
+        "1 lata de frijoles negros, escurridos",
+        "1 lata de tomates",
+        "1 cebolla, picada",
+        "2 cucharadas de aceite",
+        "sal al gusto"
+      ],
+      "steps_en": [
+        "Cook rice according to package directions.",
+        "In a pan, heat oil and cook onion until soft, about 5 minutes.",
+        "Add beans and tomatoes, simmer 10 minutes.",
+        "Serve beans over rice."
+      ],
+      "steps_es": [
+        "Cocine el arroz seg\u00fan las instrucciones del paquete.",
+        "En una sart\u00e9n, caliente el aceite y cocine la cebolla hasta que est\u00e9 suave, unos 5 minutos.",
+        "Agregue los frijoles y tomates, cocine a fuego lento 10 minutos.",
+        "Sirva los frijoles sobre el arroz."
+      ],
+      "dietary_tags": ["vegetarian", "vegan", "dairy_free"],
+      "uses_priority_items": true,
+      "notes_en": "Stretches well -- serves 4-5 people from shelf-stable ingredients.",
+      "notes_es": "Rinde bien -- sirve para 4-5 personas con ingredientes no perecederos."
+    },
+    {
+      "title_en": "Tuna Pasta Bake",
+      "title_es": "Pasta al Horno con At\u00fan",
+      "ingredients_en": [
+        "8 oz pasta",
+        "1 can tuna, drained",
+        "1 can mixed vegetables",
+        "1 cup shelf-stable milk",
+        "1/2 cup cheese, shredded"
+      ],
+      "ingredients_es": [
+        "8 oz de pasta",
+        "1 lata de at\u00fan, escurrido",
+        "1 lata de verduras mixtas",
+        "1 taza de leche de larga duraci\u00f3n",
+        "1/2 taza de queso rallado"
+      ],
+      "steps_en": [
+        "Cook pasta and drain.",
+        "Mix pasta with tuna, vegetables, and milk in a baking dish.",
+        "Top with cheese and bake at 350F for 20 minutes until bubbly."
+      ],
+      "steps_es": [
+        "Cocine la pasta y esc\u00farrala.",
+        "Mezcle la pasta con el at\u00fan, las verduras y la leche en un molde para hornear.",
+        "Cubra con queso y hornee a 350F por 20 minutos hasta que burbujee."
+      ],
+      "dietary_tags": [],
+      "uses_priority_items": false,
+      "notes_en": "Needs an oven -- swap to stovetop mac-and-tuna if unavailable.",
+      "notes_es": "Necesita horno -- si no hay, prep\u00e1relo como macarr\u00f3n con at\u00fan en la estufa."
+    }
+  ]
+}
